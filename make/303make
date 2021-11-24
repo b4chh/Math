@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+
+import sys, os
+import numpy as np
+
+def printHelp():
+    print("USAGE")
+    print("    ./303make makefile [file]")
+    print("DESCRIPTON")
+    print("    makefile    name of the makefile")
+    print("    file        name of a recently modified file")
+
+
+def error_handling(argc):
+    if (argc == 2 and sys.argv[1] == "-h"):
+        sys.exit(printHelp())
+    if (argc < 2 or argc > 3):
+        sys.exit(84)
+    if (os.path.isfile(sys.argv[1]) == False):
+        sys.exit(84)
+    if os.path.getsize(sys.argv[1]) == 0:
+        sys.exit(84)
+
+
+def check_if_return(arr):
+    new_arr = []
+    for k in range (len(arr)):
+        if arr[k] != '':
+            new_arr.append(arr[k])
+    return new_arr
+
+
+def StrToArr(arr):
+    for i in range(len(arr)):
+        arr[i] = arr[i].split(" ")
+        arr[i][0] = arr[i][0].replace(':', '')
+    return arr
+
+
+def getNames(arr):
+    nameList = []
+    for i in range(len(arr)):
+        arr[i] = arr[i].split(" ")
+        arr[i][0] = arr[i][0].replace(':', '')
+        for j in range(len(arr[i])):
+            if arr[i][j] not in nameList:
+                nameList.append(arr[i][j])
+    nameList.sort()
+    return nameList
+
+
+def create_matrix(names, NameList):
+    coord = [0, 0]
+    matrix = np.zeros((len(names), len(names)))
+    matrix = matrix.astype(int)
+    for i in range (len(NameList)):
+        for j in range (len(NameList[i])):
+            for k in range (len(names)):
+                if NameList[i][0] == names[k]:
+                    coord[1] = k
+                    continue
+                if NameList[i][j] == names[k]:
+                    coord[0] = k
+                    matrix[coord[0], coord[1]] = 1
+                    continue
+    return matrix
+
+
+def printMat(matrix):
+    for i in range (len(matrix)):
+        print(matrix[i])
+    print("")
+
+
+def GetAdjList(matrix):
+    res = []
+    for i in range(len(matrix)):
+        res.append([]*(len(matrix)))
+        tmp = matrix[i]
+        for j in range(len(tmp)):
+            if tmp[j] == 1:
+                res[i].append(j)
+    return res
+
+
+def printNames(AdjLst, names, k):
+    tmp = 0
+    lgt = len(AdjLst[k])
+    if lgt == 0:
+        print(" ->", names[k])
+    else:
+        tmp = AdjLst[k][0]
+        printNames(AdjLst, names, tmp)
+
+
+def getExecName(glo):
+    Exec = []
+    Name = []
+    for i in range (len(glo)):
+        if glo[i].find(':') == -1:
+            Exec.append(glo[i])
+        else:
+            Name.append(glo[i])
+    return Exec, Name
+
+
+def printExec(names, glo, nb):
+    Exec, Name = getExecName(glo)
+    toPrint = []
+    val = names[nb]
+    for i in range (len(Name)):
+        if Name[i].find(val) != -1:
+            if Exec[i] not in toPrint:
+                toPrint.append(Exec[i])
+    toPrint.sort()
+    return toPrint
+
+
+def printEnd(cmp, args, verifPrint):
+    if cmp == 0:
+        print ("")
+        sys.exit(0)
+    if len(args) == 2:
+        for i in range(len(verifPrint)):
+            print (verifPrint[i])
+
+
+def checkContent(toPrint, verifPrint):
+    for j in range(len(toPrint)):
+        if toPrint[j] not in verifPrint:
+            verifPrint.append(toPrint[j])
+    verifPrint.sort()
+    return verifPrint
+
+
+def CheckMat(matrix, nb, names, glo):
+    cmp = 0
+    verifPrint = []
+    for i in range (len(matrix[nb])):
+        if matrix[nb][i] != 0:
+            cmp += 1
+        if matrix[nb][i] == 1:
+            toPrint = printExec(names, glo, i)
+            verifPrint = checkContent(toPrint, verifPrint)
+    return cmp, verifPrint
+
+
+def getRest(matrix, names, args, glo):
+    val = args[1]
+    if val not in names:
+        sys.exit(84)
+    for i in range (len(names)):
+        if val == names[i]:
+            cmp, verifPrint = CheckMat(matrix, i, names, glo)
+            printEnd(cmp, args, verifPrint)
+
+
+def getDepth(matrix, names, args):
+    AdjLst = GetAdjList(matrix)
+    if len(args) == 1:
+        printMat(matrix)
+        for i in range(len(AdjLst)):
+            for j in range(len(AdjLst[i])):
+                if AdjLst[i][j]:
+                    k = AdjLst[i][j]
+                    print(names[i], "->", names[k], end='')
+                    if not AdjLst[k]:
+                        print("")
+                        break
+                    printNames(AdjLst, names, k)
+
+
+def SplitArr(glo, arr):
+    NameList = []
+    for i in range(len(arr)):
+        glo.append(arr[i])
+        if ':' in (glo[i]):
+            NameList.append(glo[i])
+    return (NameList)
+
+
+def getArr(args):
+    glo = []
+    arr = open(args[0], 'r').read().split('\n')
+    arr = check_if_return(arr)
+    NameList = SplitArr(glo, arr)
+    names = getNames(NameList)
+    matrix = create_matrix(names, NameList)
+    getDepth(matrix, names, args)
+    if (len(args) == 2):
+        getRest(matrix, names, args, glo)
+
+
+def main():
+    error_handling(len(sys.argv))
+    getArr(sys.argv[1:])
+
+
+if __name__ == "__main__":
+    main()
+    sys.exit(0)

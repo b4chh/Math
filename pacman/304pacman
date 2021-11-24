@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+import sys, os, math
+
+tab = []
+
+def open_map_and_check(pacmap, c1, c2):
+    posF = None
+    posP = None
+    posL = 0
+    global tab
+    for line in pacmap:
+        line = line.strip('\n').strip('\r').strip('\n')
+        tab.append([])
+        for i in range(0, len(line)):
+            if line[i] == 'F':
+                posF = (i, posL, 0) # phantom found #
+            elif line[i] == 'P':
+                posP = (i, posL) # pacman found #
+            mapS = {'1': -1, '0': -2, 'F': -3, 'P': -4}.get(line[i], -5) # define elem value in map #
+            if (mapS == -5):
+                print("Error: wrong map")
+                sys.exit(84)
+            tab[posL].append(mapS)
+        posL += 1
+    if posF == None or posP == None:
+        print("Error: wrong map")
+        sys.exit(84)
+    ### Now the path finding part###
+    find_algo(posF, posP, c1, c2)
+
+#that algorithm is going to be use in order to check tthe fantom 'F' adjaency while moving to the player
+def find_algo(posF, posP, c1, c2):
+    global tab
+    prev = [posF]
+    accessPath = False
+    while len(prev) > 0:
+        tmp = []
+        for posP in prev: # check path & adjacency #
+            #check if the pacman is either north or east or south or west of the fantom
+            if check_moves(tmp, posP[0], posP[1] - 1, posP[2]) or check_moves(tmp, posP[0] + 1, posP[1], posP[2]) or check_moves(tmp, posP[0], posP[1] + 1, posP[2]) or check_moves(tmp, posP[0] - 1, posP[1], posP[2]): # check pacman accessibility #
+                accessPath = True # path found #
+                tmp = []
+                break
+        prev = tmp
+    if accessPath:
+        # iterate over the tab to print the path found by the algorithm, each moves found need to be %10
+        for elem in tab:
+            tmp = ""
+            for c in elem:
+                mapSS = {-1: c1, -2: c2, -3: 'F', -4: 'P'}.get(c, str(c % 10)) # define characters in map to print #
+                tmp = tmp + mapSS
+            print(tmp) # print the used path #
+    else:
+        print("Error: no path found")
+        exit(84)
+
+def check_moves(tmp, x, y, z):
+    global tab
+    if x < 0 or y < 0 or x >= len(tab[y]) or y >= len(tab):
+        return False
+    if tab[y][x] == -4:
+        return True # pacman found by algorithm #
+    if tab[y][x] != -2:
+        return False # pacman not found #
+    tab[y][x] = z + 1
+    tmp.append((x, y, z + 1))
+
+# make a def that print the map
+def print_map(map_array):
+    # print_map(map_array)
+    for line in map_array:
+        print(''.join(line))
+
+
+#make a def that takes 3 args :
+# 1. map_array
+# 2. char_x  that replace all the '1' in the map_array
+# 3. char_y that replace all the '0' in the map_array
+def replace_char(map_array, char_x, char_y):
+    for i in range(len(map_array)):
+        for j in range(len(map_array[i])):
+            if map_array[i][j] == '1':
+                map_array[i] = map_array[i][:j] + char_x + map_array[i][j+1:]
+            elif map_array[i][j] == '0':
+                map_array[i] = map_array[i][:j] + char_y + map_array[i][j+1:]
+    return map_array
+
+def main():
+    try:
+        #check if sys.argv 1 and 2 are not empty
+        if len(sys.argv) != 4:
+            print("Error: wrong number of arguments")
+            sys.exit(84)
+        # check empty file     
+        if os.stat(sys.argv[1]).st_size == 0:
+            exit(84)
+        # open the map
+        map_file = open(sys.argv[1])
+        wall = sys.argv[2]
+        empty_space = sys.argv[3]
+
+        if (len(wall) != 1) or (len(empty_space) != 1) or (wall == empty_space):
+            print("Error: wrong number of arguments, c1 and c2 must be different and not empty")
+            sys.exit(84)
+
+        #replace all the '1' in the map_array
+        # map_array = replace_char(map_array, wall, empty_space)
+        open_map_and_check(map_file, wall, empty_space)
+
+        # print the map
+        # print_map(map_array)
+    except Exception as e:
+        print(e)
+        sys.exit(84)
+
+#call the main function
+if __name__ == '__main__':
+    main()

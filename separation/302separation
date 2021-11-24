@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import sys
+import numpy as np
+
+
+def print_usage():
+    print("USAGE:\n\t./302separation [file p1 p2 [-p]] [nb] [-m]\n")
+    print("DESCRIPTION:\n\tfile\tThe file you want to check.\n\tp1 p2\tPeople you want to know their connection.")
+    print("\tnb\tThe maximum size of the paths.")
+    print("\t-m\tDisplays the incidence matrix.")
+    print("\t-p\tDisplays the optimized path taken")
+
+
+def handle_arg(args):
+    try:
+        if args[2].isdigit() or args[3].isdigit():
+            raise TypeError("Bad Argument")
+    except Exception as e:
+        print(e)
+        exit(84)
+
+
+def other_handle(args):
+    try:
+        int(args[2])
+    except Exception as e:
+        print(e)
+        exit(84)
+
+
+def check_arg():
+    if len(sys.argv) != 3 and len(sys.argv) != 4:
+        exit(84)
+    try:
+        file = open(sys.argv[1], "r")
+    except Exception as e:
+        print(e)
+        exit(84)
+    if len(sys.argv) == 4:
+        handle_arg(sys.argv)
+    else:
+        other_handle(sys.argv)
+
+    return file
+
+
+###  argument handling
+
+def count_people(links):
+    people = [items for sublist in links for items in sublist]
+    unique_people = list(set(people))
+    unique_people.sort()
+    return len(unique_people), unique_people
+
+
+def adjacency_matrix(links, peoples):
+    matrixe_size = len(peoples)
+    matrixe_links = np.zeros((matrixe_size, matrixe_size))
+
+    for x, _ in enumerate(links):
+        for i, _ in enumerate(peoples):
+            if peoples[i] == links[x][0]:
+                for y, _ in enumerate(peoples):
+                    if peoples[y] == links[x][1]:
+                        matrixe_links[i, y] = 1
+                        matrixe_links[y, i] = 1
+                        break
+    return matrixe_links
+
+
+def matrix_cli(links):
+    peoples_nb, people_name = count_people(links)
+    [print(items) for items in people_name]
+    links = adjacency_matrix(links, people_name)
+    print("\n")
+    links = links.astype(int)
+    for line in links:
+        print(' '.join(map(str, line)))
+    print("\n")
+
+
+def separation_cli():
+    return
+
+
+def choose_display(links):
+    if len(sys.argv) == 3:
+        matrix_cli(links)
+    else:
+        separation_cli()
+
+
+def main():
+    file = check_arg()
+    content = file.read()
+    content_list = content.split('\n')
+    links = [x.split(' is friends with ') for x in content_list]
+    choose_display(links)
+
+
+if __name__ == '__main__':
+    main()
